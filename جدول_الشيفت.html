@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>جدول الشيفت</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh;font-size:14px;}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.2);position:sticky;top:0;z-index:100;}
+.logo{font-size:17px;font-weight:800;white-space:nowrap;}
+
+/* Tab nav inside header */
+.tab-nav{display:flex;background:rgba(255,255,255,.15);border-radius:8px;overflow:hidden;flex-shrink:0;}
+.tab-btn{padding:6px 16px;border:none;background:transparent;color:rgba(255,255,255,.85);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}
+.tab-btn.active{background:white;color:#1e40af;}
+
+/* Schedule controls */
+#schedCtrl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;}
+.shift-toggle{display:flex;background:rgba(255,255,255,.15);border-radius:8px;overflow:hidden;}
+.shift-btn{padding:5px 12px;border:none;background:transparent;color:white;cursor:pointer;font-size:13px;font-weight:600;transition:background .2s;}
+.shift-btn.active{background:white;color:#1e40af;}
+.date-input{padding:5px 9px;border-radius:8px;border:none;background:rgba(255,255,255,.2);color:white;font-size:13px;}
+.date-input::-webkit-calendar-picker-indicator{filter:invert(1);}
+.stats-bar{display:flex;gap:6px;flex-wrap:wrap;margin-right:auto;}
+.badge{background:rgba(255,255,255,.2);padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+.badge.green{background:#16a34a;} .badge.yellow{background:#d97706;} .badge.red{background:#dc2626;}
+.hbtn{padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;transition:all .2s;}
+.hbtn-auto{background:#fbbf24;color:#1e293b;} .hbtn-auto:hover{background:#f59e0b;}
+.hbtn-save{background:#22c55e;color:white;} .hbtn-save:hover{background:#16a34a;}
+.hbtn-sec{background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);} .hbtn-sec:hover{background:rgba(255,255,255,.25);}
+
+/* Manage controls */
+#mgmtCtrl{display:none;align-items:center;gap:8px;flex:1;flex-wrap:wrap;}
+.hbtn-blue{background:white;color:#1e40af;} .hbtn-blue:hover{background:#dbeafe;}
+.hbtn-green{background:#22c55e;color:white;} .hbtn-green:hover{background:#16a34a;}
+
+/* ── SCHEDULE TAB ── */
+#schedTab{display:grid;grid-template-columns:265px 1fr;height:calc(100vh - 54px);overflow:hidden;}
+#mgmtTab{display:none;height:calc(100vh - 54px);overflow-y:auto;padding:14px;}
+
+/* Employee panel */
+.emp-panel{background:white;border-left:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden;}
+.panel-top{padding:9px 11px;border-bottom:1px solid #e2e8f0;background:#f8fafc;}
+.panel-title{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
+.pres-count{color:#16a34a;font-size:12px;}
+.search-box{width:100%;padding:6px 9px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;margin-bottom:7px;direction:rtl;}
+.search-box:focus{outline:none;border-color:#3b82f6;}
+.sel-btns{display:flex;gap:5px;}
+.sel-btn{flex:1;padding:4px;border:1px solid #e2e8f0;border-radius:6px;background:white;cursor:pointer;font-size:11px;color:#64748b;}
+.sel-btn:hover{background:#f1f5f9;}
+.emp-list{flex:1;overflow-y:auto;padding:5px;}
+.emp-item{display:flex;align-items:center;gap:7px;padding:4px 7px;border-radius:7px;cursor:pointer;margin-bottom:2px;transition:background .12s;user-select:none;}
+.emp-item:hover{background:#f1f5f9;}
+.emp-item.present{background:#f0fdf4;}
+.emp-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#16a34a;flex-shrink:0;}
+.emp-name{flex:1;font-size:12px;color:#1e293b;}
+.emp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.emp-sc{font-size:10px;color:#94a3b8;}
+
+/* Tasks area */
+.tasks-area{padding:11px;overflow-y:auto;background:#f0f4f8;}
+.tasks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:9px;margin-bottom:11px;}
+.task-card{background:white;border-radius:11px;border:2px solid #e2e8f0;overflow:hidden;transition:border-color .3s,background .3s;}
+.task-card.s-empty{border-color:#ef4444;}
+.task-card.s-partial{border-color:#f59e0b;}
+.task-card.s-filled{border-color:#22c55e;background:#f0fdf4;}
+.task-card.s-over{border-color:#f59e0b;background:#fffbeb;}
+.task-hdr{padding:7px 9px;display:flex;align-items:center;gap:5px;border-bottom:1px solid #f1f5f9;}
+.task-icon{font-size:14px;flex-shrink:0;}
+.task-name{flex:1;font-size:11px;font-weight:700;color:#1e293b;line-height:1.3;}
+.task-counter{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+.cnt-now{font-size:18px;font-weight:800;}
+.cnt-sep{color:#94a3b8;font-size:13px;margin:0 1px;}
+.cnt-req{font-size:12px;color:#64748b;border:none;background:#f1f5f9;border-radius:4px;padding:2px 3px;width:30px;text-align:center;font-weight:700;cursor:pointer;}
+.cnt-req:focus{outline:1px solid #3b82f6;}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.d-empty{background:#ef4444;animation:pulse 1.5s infinite;}
+.d-partial{background:#f59e0b;}
+.d-filled{background:#22c55e;animation:glow 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.8);}}
+@keyframes glow{0%,100%{box-shadow:0 0 4px #22c55e;}50%{box-shadow:0 0 12px #22c55e,0 0 24px #22c55e55;}}
+.task-body{padding:7px 9px;}
+.assigned-list{list-style:none;margin-bottom:5px;}
+.asgn-item{display:flex;align-items:center;justify-content:space-between;padding:3px 5px;border-radius:5px;background:#f8fafc;margin-bottom:2px;}
+.asgn-name{font-size:11px;color:#1e293b;}
+.rm-btn{border:none;background:none;color:#ef4444;cursor:pointer;font-size:12px;padding:0 2px;}
+.add-row{display:flex;gap:4px;}
+.add-sel{flex:1;padding:3px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#64748b;cursor:pointer;direction:rtl;min-width:0;}
+.add-sel:focus{outline:none;border-color:#3b82f6;}
+.add-btn{padding:3px 8px;border:none;border-radius:6px;background:#3b82f6;color:white;cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap;}
+.add-btn:hover{background:#2563eb;}
+
+/* Unassigned */
+.unassigned-sec{background:white;border-radius:11px;border:2px dashed #e2e8f0;padding:10px;}
+.unassigned-title{font-size:12px;font-weight:700;color:#64748b;margin-bottom:7px;}
+.unassigned-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.u-tag{background:#f1f5f9;border:1px solid #e2e8f0;padding:3px 8px;border-radius:20px;font-size:11px;color:#1e293b;}
+
+/* ── MANAGE TAB ── */
+.mgmt-section{background:white;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:14px;overflow:hidden;}
+.mgmt-sec-hdr{padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;}
+.mgmt-sec-title{font-size:14px;font-weight:800;color:#1e293b;}
+.mgmt-sec-body{padding:12px 14px;}
+
+/* Tasks management */
+.tasks-mgmt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.task-mgmt-card{border:1px solid #e2e8f0;border-radius:9px;padding:9px 10px;background:#fafafa;display:flex;align-items:center;gap:7px;}
+.task-mgmt-icon{font-size:18px;}
+.task-mgmt-info{flex:1;min-width:0;}
+.task-mgmt-name{font-size:12px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.task-mgmt-req{font-size:11px;color:#64748b;margin-top:1px;}
+.task-mgmt-actions{display:flex;gap:4px;flex-shrink:0;}
+.tbtn{padding:3px 7px;border-radius:5px;border:none;cursor:pointer;font-size:11px;font-weight:600;}
+.tbtn-edit{background:#dbeafe;color:#1d4ed8;} .tbtn-edit:hover{background:#bfdbfe;}
+.tbtn-del{background:#fee2e2;color:#dc2626;} .tbtn-del:hover{background:#fecaca;}
+
+/* Add task form */
+.add-task-form{display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;padding:10px 14px;border-top:1px solid #e2e8f0;background:#f8fafc;}
+.form-group{display:flex;flex-direction:column;gap:3px;}
+.form-label{font-size:11px;color:#64748b;font-weight:600;}
+.form-input{padding:5px 9px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;background:white;direction:rtl;}
+.form-input:focus{outline:none;border-color:#3b82f6;}
+.form-input.w-icon{width:60px;text-align:center;}
+.form-input.w-num{width:60px;text-align:center;}
+.form-input.w-name{width:180px;}
+.form-input.w-color{width:50px;height:32px;padding:2px;cursor:pointer;border-radius:7px;}
+.submit-btn{padding:5px 14px;border:none;border-radius:7px;background:#3b82f6;color:white;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;}
+.submit-btn:hover{background:#2563eb;}
+
+/* Employee table */
+.emp-table-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 340px);}
+.emp-table{border-collapse:collapse;width:100%;min-width:600px;}
+.emp-table th{background:#f8fafc;border:1px solid #e2e8f0;padding:6px 6px;font-size:11px;font-weight:700;color:#475569;text-align:center;white-space:normal;position:sticky;top:0;z-index:4;min-width:72px;max-width:90px;box-shadow:0 2px 4px rgba(0,0,0,.08);}
+.emp-table th.name-col{text-align:right;min-width:130px;position:sticky;right:0;top:0;background:#f8fafc;z-index:6;box-shadow:0 2px 4px rgba(0,0,0,.08);}
+.emp-table td{border:1px solid #e2e8f0;padding:4px 6px;font-size:11px;color:#1e293b;text-align:center;}
+.emp-table td.name-td{text-align:right;background:white;position:sticky;right:0;font-size:12px;font-weight:500;}
+.emp-table td input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:#3b82f6;}
+.emp-table td input[type=text]{border:none;background:transparent;font-size:12px;width:100%;direction:rtl;padding:1px 3px;}
+.emp-table td input[type=text]:focus{outline:1px solid #3b82f6;border-radius:3px;}
+.emp-table tr:hover td{background:#f8fafc;}
+.emp-table tr:hover td.name-td{background:#f8fafc;}
+.del-emp-btn{border:none;background:none;color:#ef4444;cursor:pointer;font-size:13px;padding:0 3px;}
+.del-emp-btn:hover{color:#dc2626;}
+.add-emp-row td{background:#f0fdf4;}
+.add-emp-input{border:1px solid #22c55e;border-radius:6px;padding:4px 7px;font-size:12px;direction:rtl;width:100%;}
+.add-emp-input:focus{outline:none;border-color:#16a34a;}
+.add-emp-btn{padding:4px 10px;border:none;border-radius:6px;background:#22c55e;color:white;cursor:pointer;font-size:12px;font-weight:700;}
+.add-emp-btn:hover{background:#16a34a;}
+
+/* Edit task modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:14px;padding:20px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-title{font-size:16px;font-weight:800;color:#1e293b;margin-bottom:14px;}
+.modal-field{margin-bottom:10px;}
+.modal-label{font-size:12px;color:#64748b;font-weight:600;margin-bottom:4px;}
+.modal-input{width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;direction:rtl;}
+.modal-input:focus{outline:none;border-color:#3b82f6;}
+.modal-row{display:flex;gap:8px;}
+.modal-input.color{height:38px;padding:3px;cursor:pointer;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-start;}
+.mbtn{padding:7px 16px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;}
+.mbtn-save{background:#3b82f6;color:white;} .mbtn-save:hover{background:#2563eb;}
+.mbtn-cancel{background:#f1f5f9;color:#64748b;} .mbtn-cancel:hover{background:#e2e8f0;}
+
+/* ── PASTE MODAL ── */
+.paste-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center;}
+.paste-modal.open{display:flex;}
+.paste-box{background:white;border-radius:16px;width:620px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.35);overflow:hidden;}
+.paste-hdr{padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;background:#f8fafc;}
+.paste-hdr-title{font-size:15px;font-weight:800;color:#1e293b;}
+.paste-close{border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;line-height:1;}
+.paste-close:hover{color:#1e293b;}
+.paste-body{padding:16px 18px;flex:1;overflow-y:auto;}
+.paste-label{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;}
+.paste-hint{font-size:11px;color:#94a3b8;margin-bottom:8px;}
+.paste-textarea{width:100%;height:130px;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;direction:rtl;resize:vertical;font-family:inherit;}
+.paste-textarea:focus{outline:none;border-color:#3b82f6;}
+.paste-analyze-btn{margin-top:10px;width:100%;padding:9px;border:none;border-radius:9px;background:#3b82f6;color:white;font-size:14px;font-weight:700;cursor:pointer;}
+.paste-analyze-btn:hover{background:#2563eb;}
+/* Results */
+.match-results{margin-top:14px;}
+.match-summary{font-size:12px;color:#64748b;margin-bottom:10px;padding:8px 10px;background:#f8fafc;border-radius:8px;}
+.match-table{width:100%;border-collapse:collapse;}
+.match-table th{background:#f1f5f9;border:1px solid #e2e8f0;padding:7px 9px;font-size:11px;font-weight:700;color:#475569;text-align:right;}
+.match-table td{border:1px solid #e2e8f0;padding:5px 8px;font-size:12px;vertical-align:middle;}
+.match-row-green td{background:#f0fdf4;}
+.match-row-yellow td{background:#fffbeb;}
+.match-row-red td{background:#fef2f2;}
+.conf-badge{display:inline-block;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:700;}
+.conf-green{background:#dcfce7;color:#16a34a;}
+.conf-yellow{background:#fef9c3;color:#b45309;}
+.conf-red{background:#fee2e2;color:#dc2626;}
+.match-sel{padding:4px 7px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;direction:rtl;width:100%;cursor:pointer;}
+.match-sel:focus{outline:none;border-color:#3b82f6;}
+.match-check{width:16px;height:16px;cursor:pointer;accent-color:#16a34a;}
+.paste-footer{padding:12px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;background:#f8fafc;}
+.paste-confirm-btn{flex:1;padding:9px;border:none;border-radius:9px;background:#16a34a;color:white;font-size:14px;font-weight:700;cursor:pointer;}
+.paste-confirm-btn:hover{background:#15803d;}
+.paste-cancel-btn{padding:9px 18px;border:1px solid #e2e8f0;border-radius:9px;background:white;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;}
+.paste-cancel-btn:hover{background:#f1f5f9;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:#f1f5f9;}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}
+
+/* ── RESULT TABLE ── */
+.result-sec{background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-top:10px;direction:ltr;}
+.result-hdr{padding:11px 16px;background:#1e40af;color:white;text-align:center;}
+.result-hdr-sub{font-size:16px;font-weight:700;opacity:1;}
+.result-tbl{width:100%;border-collapse:collapse;direction:ltr;}
+.result-tbl tr{border-bottom:1px solid #e2e8f0;}
+.result-tbl tr:last-child{border-bottom:none;}
+.result-tbl td{padding:10px 16px;font-size:15px;vertical-align:middle;}
+.result-tbl td.r-task{font-weight:800;color:#1e293b;width:200px;white-space:nowrap;background:#f8fafc;text-align:left;}
+.result-tbl td.r-names{color:#374151;line-height:1.8;text-align:left;}
+.result-tbl tr:nth-child(even) td{background:#f0f6ff;}
+.result-tbl tr:nth-child(even) td.r-task{background:#dbeafe;}
+.r-main{font-weight:700;color:#1e40af;}
+.r-av{color:#64748b;}
+
+/* ── TRAINING SUGGESTIONS ── */
+.train-sec{background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-top:10px;}
+.train-hdr{padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;}
+.train-hdr-title{font-size:13px;font-weight:800;color:#1e293b;}
+.train-body{padding:10px 12px;}
+.train-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.train-card{border:1px solid #fde68a;border-radius:9px;padding:9px 11px;background:#fffbeb;display:flex;flex-direction:column;gap:4px;}
+.train-task{font-size:11px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:4px;}
+.train-names{font-size:11px;color:#1e293b;line-height:1.6;}
+.train-name-item{display:inline-block;background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:2px 8px;margin:1px 2px;font-size:11px;}
+/* Repeat warning badge on employee name in assigned list */
+.repeat-warn{display:inline-block;background:#fee2e2;color:#dc2626;border-radius:10px;font-size:9px;font-weight:800;padding:1px 5px;margin-right:4px;vertical-align:middle;}
+
+/* Print */
+@media print{
+  .header,.emp-panel,.add-row,.rm-btn,.unassigned-sec{display:none!important;}
+  #schedTab{display:block;height:auto;}
+  .tasks-grid{grid-template-columns:repeat(3,1fr);}
+  .task-card{break-inside:avoid;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<div class="header">
+  <span class="logo">📋 جدول الشيفت</span>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tabSched" onclick="showTab('sched')">📋 الجدول</button>
+    <button class="tab-btn"        id="tabMgmt"  onclick="showTab('mgmt')">⚙️ إدارة الفريق</button>
+  </div>
+
+  <!-- SCHEDULE CONTROLS -->
+  <div id="schedCtrl">
+    <div class="shift-toggle">
+      <button class="shift-btn active" id="btnMorning" onclick="setShift('morning')">🌅 صباحي</button>
+      <button class="shift-btn"        id="btnEvening" onclick="setShift('evening')">🌙 مسائي</button>
+    </div>
+    <input type="date" class="date-input" id="dateInput" onchange="state.date=this.value" />
+    <div class="stats-bar">
+      <span class="badge" id="sBadge">الحاضرون: 0</span>
+      <span class="badge" id="rBadge">المطلوب: 0</span>
+      <span class="badge" id="aBadge">موزع: 0</span>
+      <span class="badge" id="uBadge">بدون تاسك: 0</span>
+    </div>
+    <button class="hbtn hbtn-save" onclick="saveSchedule()">💾 حفظ</button>
+    <button class="hbtn hbtn-sec"  onclick="clearAll()">🗑️ مسح</button>
+    <button class="hbtn hbtn-sec"  onclick="window.print()">🖨️ طباعة</button>
+  </div>
+
+  <!-- MANAGE CONTROLS -->
+  <div id="mgmtCtrl">
+    <button class="hbtn hbtn-blue" onclick="openAddEmpRow()">➕ إضافة موظف</button>
+    <button class="hbtn hbtn-blue" onclick="scrollToAddTask()">➕ إضافة تاسك</button>
+    <button class="hbtn hbtn-green" onclick="saveMgmtData()">💾 حفظ التعديلات</button>
+    <span style="font-size:12px;opacity:.7;margin-right:auto;">التعديلات تُحفظ تلقائياً ✓</span>
+  </div>
+</div>
+
+<!-- ══════════════ SCHEDULE TAB ══════════════ -->
+<div id="schedTab">
+
+  <!-- Employee Panel -->
+  <div class="emp-panel">
+    <div class="panel-top">
+      <div class="panel-title">
+        <span>👥 الفريق</span>
+        <span class="pres-count" id="pCount">0 حاضر</span>
+      </div>
+      <input type="text" class="search-box" id="searchBox" placeholder="ابحث باسم..." oninput="renderEmps()" />
+      <div class="sel-btns">
+        <button class="sel-btn" onclick="selectAll()">✅ تحديد الكل</button>
+        <button class="sel-btn" onclick="deselectAll()">❌ إلغاء الكل</button>
+      </div>
+      <button onclick="openPasteModal()" style="margin-top:7px;width:100%;padding:7px;border:none;border-radius:8px;background:#1e40af;color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">📋 لصق أسماء الشيفت</button>
+    </div>
+    <div class="emp-list" id="empList"></div>
+  </div>
+
+  <!-- Tasks Area -->
+  <div class="tasks-area">
+    <div class="tasks-grid" id="tasksGrid"></div>
+    <button onclick="autoAssign()" style="width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:10px;background:#fbbf24;color:#1e293b;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 8px rgba(251,191,36,.4);">⚡ توزيع تلقائي</button>
+    <div class="unassigned-sec">
+      <div class="unassigned-title">⚠️ حاضرون بدون تاسك</div>
+      <div class="unassigned-tags" id="unassignedList"></div>
+    </div>
+
+    <!-- اقتراحات التدريب -->
+    <div class="train-sec" id="trainSec" style="display:none">
+      <div class="train-hdr">
+        <span class="train-hdr-title">🎓 اقتراحات تدريب</span>
+        <span style="font-size:11px;color:#92400e;">حاضرون يعرفوا التاسك لكن ما عملوهوش من 2+ أسبوع</span>
+      </div>
+      <div class="train-body">
+        <div class="train-grid" id="trainGrid"></div>
+      </div>
+    </div>
+
+    <!-- نتيجة الجدول -->
+    <div class="result-sec" id="resultSec" style="display:none">
+      <div class="result-hdr">
+        <span class="result-hdr-sub" id="resultLabel"></span>
+      </div>
+      <table class="result-tbl"><tbody id="resultBody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MANAGE TAB ══════════════ -->
+<div id="mgmtTab">
+
+  <!-- Tasks Section -->
+  <div class="mgmt-section">
+    <div class="mgmt-sec-hdr">
+      <span class="mgmt-sec-title">📌 التاسكات</span>
+      <span style="font-size:12px;color:#64748b;">عدل الاسم والأيقونة والعدد المطلوب لكل تاسك</span>
+    </div>
+    <div class="mgmt-sec-body">
+      <div class="tasks-mgmt-grid" id="tasksMgmtGrid"></div>
+    </div>
+    <!-- Add Task Form -->
+    <div class="add-task-form" id="addTaskForm">
+      <div class="form-group">
+        <span class="form-label">اسم التاسك</span>
+        <input type="text" class="form-input w-name" id="newTaskName" placeholder="مثال: Customer Service" />
+      </div>
+      <div class="form-group">
+        <span class="form-label">أيقونة</span>
+        <input type="text" class="form-input w-icon" id="newTaskIcon" placeholder="📞" maxlength="3" />
+      </div>
+      <div class="form-group">
+        <span class="form-label">العدد المطلوب</span>
+        <input type="number" class="form-input w-num" id="newTaskReq" value="1" min="0" max="20" />
+      </div>
+      <div class="form-group">
+        <span class="form-label">اللون</span>
+        <input type="color" class="form-input w-color" id="newTaskColor" value="#3b82f6" />
+      </div>
+      <button class="submit-btn" onclick="addTask()">➕ إضافة التاسك</button>
+    </div>
+  </div>
+
+  <!-- Employees Section -->
+  <div class="mgmt-section">
+    <div class="mgmt-sec-hdr">
+      <span class="mgmt-sec-title">👥 الموظفون والمهارات</span>
+      <span style="font-size:12px;color:#64748b;">✓ = يعرف التاسك ده &nbsp;|&nbsp; اضغط على الاسم لتعديله</span>
+    </div>
+    <div class="mgmt-sec-body" style="padding:0;">
+      <div class="emp-table-wrap">
+        <table class="emp-table" id="empTable"></table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════ PASTE NAMES MODAL ══════════════ -->
+<div class="paste-modal" id="pasteModal">
+  <div class="paste-box">
+    <div class="paste-hdr">
+      <span class="paste-hdr-title">📋 لصق أسماء الشيفت</span>
+      <button class="paste-close" onclick="closePasteModal()">✕</button>
+    </div>
+    <div class="paste-body">
+      <div id="pasteStep1">
+        <div class="paste-label">الصق أسماء الحاضرين هنا</div>
+        <div class="paste-hint">كل اسم في سطر منفصل — أو مفصولين بفاصلة — مش لازم يكون مطابق تماماً</div>
+        <textarea class="paste-textarea" id="pasteTextarea" placeholder="مثال:&#10;مصطفى نور&#10;احمد صالح&#10;محمد فضيلة&#10;..."></textarea>
+        <button class="paste-analyze-btn" onclick="analyzePaste()">🔍 تحليل الأسماء ومطابقتها</button>
+      </div>
+      <div id="pasteStep2" style="display:none">
+        <div class="match-summary" id="matchSummary"></div>
+        <div class="match-results">
+          <table class="match-table">
+            <thead>
+              <tr>
+                <th style="width:32px">✓</th>
+                <th>الاسم المُلصق</th>
+                <th>أقرب موظف في النظام</th>
+                <th style="width:60px">تطابق</th>
+              </tr>
+            </thead>
+            <tbody id="matchTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="paste-footer" id="pasteFooter" style="display:none">
+      <button class="paste-confirm-btn" onclick="confirmMatches()">✅ تأكيد وتحديد الحاضرين</button>
+      <button class="paste-cancel-btn" onclick="backToPaste()">↩ رجوع</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">✏️ تعديل التاسك</div>
+    <input type="hidden" id="editTaskId" />
+    <div class="modal-field">
+      <div class="modal-label">اسم التاسك</div>
+      <input type="text" class="modal-input" id="editTaskName" />
+    </div>
+    <div class="modal-row">
+      <div class="modal-field" style="flex:1">
+        <div class="modal-label">أيقونة</div>
+        <input type="text" class="modal-input" id="editTaskIcon" maxlength="3" style="text-align:center" />
+      </div>
+      <div class="modal-field" style="flex:1">
+        <div class="modal-label">العدد المطلوب</div>
+        <input type="number" class="modal-input" id="editTaskReq" min="0" max="30" />
+      </div>
+      <div class="modal-field" style="width:60px">
+        <div class="modal-label">اللون</div>
+        <input type="color" class="modal-input color" id="editTaskColor" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="mbtn mbtn-save" onclick="saveEditTask()">💾 حفظ</button>
+      <button class="mbtn mbtn-cancel" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  DEFAULT DATA
+// ══════════════════════════════════════════
+// ── اسماء الموظفين بالانجليزي (en) ──
+// ترتيب التاسكات مطابق لترتيب أعمدة الإكسيل تماماً
+const DEFAULT_TASKS = [
+  {id:"whatsapp",  name:"Online Groups WhatsApp", req:1, icon:"💬", color:"#8b5cf6"},  // col 3
+  {id:"store",     name:"Store Pickup",           req:5, icon:"🏪", color:"#22c55e"},  // col 4
+  {id:"home",      name:"Home Delivery",          req:5, icon:"🚚", color:"#10b981"},  // col 5
+  {id:"milaserv",  name:"Milaserv CC + TS",       req:2, icon:"🔧", color:"#f59e0b"},  // col 6
+  {id:"op_whats",  name:"Operation WhatsApp",     req:1, icon:"📱", color:"#06b6d4"},  // col 7
+  {id:"bupa_main", name:"BUPA Main",              req:1, icon:"🏥", color:"#ef4444"},  // col 8
+  {id:"bupa_av",   name:"BUPA AV",                req:2, icon:"🏨", color:"#f97316"},  // col 9
+  {id:"meena_main",name:"Meena Main",             req:1, icon:"🌙", color:"#3b82f6"},  // col 10
+  {id:"meena_av",  name:"Meena AV",               req:5, icon:"🌛", color:"#6366f1"},  // col 11
+  {id:"insurance", name:"Partners",               req:1, icon:"🤝", color:"#84cc16"},  // col 12
+];
+
+// Skills order matches DEFAULT_TASKS order above
+const DEFAULT_EMPS = [
+  {n:"د.مصطفى نور",       s:[1,1,1,1,1,1,1,1,1,1], en:"M.Nour"},
+  {n:"حازم شاهين",         s:[1,1,1,1,1,1,1,1,1,1], en:"Hazem Shahin"},
+  {n:"د.محمد فضيلة",      s:[1,1,1,1,1,1,1,1,1,1], en:"Fadeela"},
+  {n:"د.حمدي السيد",      s:[1,1,1,1,1,1,1,1,1,1], en:"Hamdi"},
+  {n:"د.احمد الفداوي",    s:[1,1,1,1,1,1,1,1,1,1], en:"Fedawy"},
+  {n:"د.عبدالرحمن رضا",   s:[1,1,1,1,1,1,1,1,1,1], en:"A.Rahman Reda"},
+  {n:"د.مصطفى بغدودة",    s:[1,1,1,1,1,1,1,1,1,1], en:"Bagdouda"},
+  {n:"د.محمد صلاح",       s:[1,1,1,1,1,1,1,1,1,1], en:"M.Salah"},
+  {n:"د.عمر ماهر",        s:[1,1,1,1,1,1,1,1,1,1], en:"O.Maher"},
+  {n:"د.عبدالرحمن مهنا",  s:[1,1,1,1,1,1,1,1,1,1], en:"Mohanna"},
+  {n:"د.محمد النقيطي",    s:[1,1,1,1,1,1,1,1,1,1], en:"Elnekety"},
+  {n:"د.عبده فهمي",       s:[1,1,1,1,1,1,1,1,1,1], en:"Fahmy"},
+  {n:"د.احمد عبدالمقصود", s:[0,1,1,1,1,1,1,1,1,1], en:"Abd.Maksoud"},
+  {n:"د.محمد دياب",       s:[1,1,1,1,1,1,1,1,1,1], en:"Diab"},
+  {n:"د.احمد صالح",       s:[1,1,1,1,1,1,1,1,1,1], en:"Saleh"},
+  {n:"د.احمد عوف",        s:[1,1,1,1,1,1,1,1,1,1], en:"Awf"},
+  {n:"د.عبدالله عطوة",    s:[1,1,1,1,1,1,1,1,1,1], en:"Atwa"},
+  {n:"د.محمد معوض",       s:[1,1,1,1,1,1,1,1,1,1], en:"Mo3awad"},
+  {n:"د.علي ابراهيم",     s:[1,1,1,1,1,1,1,1,1,1], en:"Ali Ibrahim"},
+  {n:"د.محمود البدري",    s:[1,1,1,1,1,1,1,1,1,1], en:"Elbadry"},
+  {n:"د.فاطيمة عمرو",     s:[0,1,1,1,1,0,1,1,1,1], en:"Fatima"},
+  {n:"د.جيهان",           s:[0,1,1,1,1,0,1,0,1,1], en:"Gehan"},
+  {n:"د.نصر",             s:[1,1,1,1,1,1,1,1,1,1], en:"Nasr"},
+  {n:"د.احمد حلمي",       s:[0,1,1,1,1,0,1,0,1,1], en:"Helmy"},
+  {n:"د.ايمان",           s:[1,1,1,1,1,1,1,1,1,1], en:"Eman"},
+  {n:"د.سارة",            s:[1,1,1,1,1,1,1,1,1,1], en:"Sara"},
+  {n:"د.محمد خضر",        s:[1,1,1,1,1,1,1,1,1,1], en:"Khedr"},
+  {n:"د.يمنى",            s:[1,1,1,1,1,1,1,1,1,1], en:"Yomna"},
+  {n:"د.آلاء",            s:[1,1,1,1,1,1,1,1,1,1], en:"Alya"},
+  {n:"محمد دينيور",        s:[0,1,1,1,1,0,1,1,1,1], en:"Dinour"},
+  {n:"يحى العشماوي",       s:[0,1,0,0,0,0,0,0,1,0], en:"Yahya"},
+  {n:"ايمان ياسر",         s:[0,1,1,1,1,0,1,1,1,1], en:"Eman Yaser"},
+  {n:"علياء",              s:[0,1,1,1,1,0,1,1,1,1], en:"Alya2"},
+  {n:"حازم كامل",          s:[0,1,1,1,1,0,1,1,1,1], en:"Hazem Kamel"},
+  {n:"أسامة عبداللطيف",   s:[0,1,1,1,1,0,1,1,1,1], en:"Osama"},
+  {n:"عمر راشد",           s:[0,1,1,1,1,1,1,1,1,1], en:"O.Rashed"},
+  {n:"فارس",               s:[0,1,1,1,1,1,1,1,1,1], en:"Fares"},
+  {n:"محمد غالى",          s:[0,0,0,0,0,0,1,0,1,0], en:"Ghaly"},
+  {n:"محمود ناجح",         s:[0,0,0,0,0,0,1,0,1,0], en:"Nageh"},
+  {n:"السيد على",          s:[0,1,1,0,0,0,1,0,1,0], en:"Elsayed Ali"},
+  {n:"انس السيد",          s:[0,1,1,0,0,0,1,0,1,0], en:"Anas"},
+  {n:"خالد علوان",         s:[0,0,0,0,0,0,0,0,1,0], en:"Khaled"},
+  {n:"محمد عباس",          s:[0,0,0,0,0,0,0,0,1,0], en:"Abbas"},
+  {n:"اسماعيل فرحات",      s:[0,0,0,0,0,0,0,0,1,0], en:"Farhat"},
+  {n:"اياد السيد",         s:[0,0,0,0,0,0,0,0,1,0], en:"Eyad"},
+  {n:"احمد سعد",           s:[0,1,1,0,0,0,0,0,0,0], en:"A.Saad"},
+  {n:"محمد فرج",           s:[0,1,1,0,0,0,0,0,0,0], en:"Farag"},
+  {n:"خالد العرباوي",      s:[0,1,1,0,0,0,0,0,0,0], en:"Arbawy"},
+  {n:"علي كامل",           s:[0,1,1,0,0,0,0,0,0,0], en:"Ali Kamel"},
+  {n:"عبدالرحمن القباري",  s:[0,1,1,0,0,0,0,0,0,0], en:"Elkabary"},
+  {n:"احمد البنداري",      s:[0,1,1,0,0,0,0,0,0,0], en:"Elbandary"},
+  {n:"عبدالرحمن رمضان",   s:[0,1,1,0,0,0,0,0,0,0], en:"A.Rahman Ramadan"},
+  {n:"هشام ذكى",           s:[0,1,1,0,0,0,0,0,0,0], en:"Hisham"},
+  {n:"محمد البيلى",        s:[0,1,1,0,0,0,0,0,0,0], en:"Elbily"},
+  {n:"اسلام حامد",         s:[0,1,1,0,0,0,0,0,0,0], en:"Islam"},
+  {n:"عبد الرحمن احمد",   s:[0,1,1,0,0,0,0,0,0,0], en:"A.Rahman Ahmed"},
+  {n:"احمد الامام",        s:[0,0,0,0,0,0,0,1,0,0], en:"Elimam"},
+  {n:"محمد يس",            s:[0,0,0,0,0,0,0,1,0,0], en:"Yaseen"},
+  {n:"زياد السولية",       s:[0,0,0,0,0,0,0,1,0,0], en:"Zeyad"},
+];
+
+// ══════════════════════════════════════════
+//  APP DATA (loaded from localStorage or defaults)
+// ══════════════════════════════════════════
+let appData = loadAppData();
+
+function loadAppData(){
+  try{
+    const saved = localStorage.getItem('shiftAppData_v2'); // v2 = ترتيب صح مطابق للإكسيل
+    if(saved){
+      const d = JSON.parse(saved);
+      // Migrate: add missing fields
+      const defMap = Object.fromEntries(DEFAULT_EMPS.map(e=>[e.n, e]));
+      d.employees.forEach(e=>{
+        if(e.en === undefined) e.en = defMap[e.n]?.en || '';
+        while(e.s.length < d.tasks.length) e.s.push(0);
+        e.s = e.s.slice(0, d.tasks.length);
+      });
+      return d;
+    }
+  }catch(e){}
+  return {
+    tasks: JSON.parse(JSON.stringify(DEFAULT_TASKS)),
+    employees: JSON.parse(JSON.stringify(DEFAULT_EMPS))
+  };
+}
+
+function saveAppData(){
+  localStorage.setItem('shiftAppData_v2', JSON.stringify(appData));
+}
+
+// ══════════════════════════════════════════
+//  SCHEDULE STATE
+// ══════════════════════════════════════════
+const state = {
+  date: new Date().toISOString().split('T')[0],
+  shift: 'morning',
+  present: new Set(),
+  assignments: {},
+  reqs: {},
+};
+function initAssignments(){ appData.tasks.forEach(t=>{ if(!state.assignments[t.id]) state.assignments[t.id]=[]; }); }
+initAssignments();
+
+// ══════════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════════
+function getHist(){ try{return JSON.parse(localStorage.getItem('shiftHist')||'[]');}catch{return[];} }
+function saveHist(){
+  const hist=getHist();
+  const map={};
+  appData.tasks.forEach(t=>(state.assignments[t.id]||[]).forEach(e=>map[e]=t.id));
+  const ex=hist.find(h=>h.date===state.date);
+  if(ex) ex[state.shift]=map;
+  else{ const r={date:state.date}; r[state.shift]=map; hist.unshift(r); }
+  while(hist.length>90) hist.pop();
+  localStorage.setItem('shiftHist',JSON.stringify(hist));
+}
+function lastTaskAgo(empName, taskId){
+  const hist=getHist();
+  for(let i=0;i<hist.length;i++){
+    const d=hist[i][state.shift]||{};
+    if(d[empName]===taskId) return i;
+  }
+  return 999;
+}
+
+// كم مرة عمل الموظف ده التاسك ده في آخر 7 أيام (نفس الشيفت)
+function timesThisWeek(empName, taskId){
+  const hist=getHist();
+  let count=0;
+  for(let i=0;i<Math.min(7,hist.length);i++){
+    const d=hist[i][state.shift]||{};
+    if(d[empName]===taskId) count++;
+  }
+  return count;
+}
+
+// آخر مرة عمل الموظف التاسك — عدد الأيام (index في history)
+function daysSinceTask(empName, taskId){
+  return lastTaskAgo(empName, taskId); // نفس المنطق: 999 = ما عملهوش أبداً
+}
+
+// عرض اقتراحات التدريب
+function renderTrainingSuggestions(){
+  const sec=document.getElementById('trainSec');
+  const grid=document.getElementById('trainGrid');
+  if(!sec||!grid) return;
+
+  const presentArr=[...state.present];
+  if(!presentArr.length){ sec.style.display='none'; return; }
+
+  // لكل تاسك: الحاضرين اللي يعرفوه ولكن ما شتغلوه من 14+ يوم
+  const suggestions=[]; // [{task, names:[]}]
+  appData.tasks.forEach(task=>{
+    const candidates=presentArr.filter(e=>{
+      if(!canDo(e,task.id)) return false; // مش بيعرف التاسك
+      const ago=daysSinceTask(e,task.id);
+      return ago>=14; // ما شتغلوش من 14+ يوم (أو ما شتغلوش أبداً=999)
+    });
+    if(candidates.length>0){
+      suggestions.push({task, names:candidates});
+    }
+  });
+
+  if(!suggestions.length){ sec.style.display='none'; return; }
+
+  sec.style.display='';
+  grid.innerHTML=suggestions.map(s=>`
+    <div class="train-card">
+      <div class="train-task">${s.task.icon} ${s.task.name}</div>
+      <div class="train-names">${s.names.map(n=>`<span class="train-name-item">${displayName(n)}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function getReq(tid){ return state.reqs[tid]!==undefined?state.reqs[tid]:(appData.tasks.find(t=>t.id===tid)||{req:0}).req; }
+function canDo(empName, taskId){
+  const ti = appData.tasks.findIndex(t=>t.id===taskId);
+  const emp = appData.employees.find(e=>e.n===empName);
+  return ti>=0 && emp && emp.s[ti]===1;
+}
+function getAssignedTask(empName){ for(const[tid,arr]of Object.entries(state.assignments))if(arr.includes(empName))return tid; return null; }
+function totalReq(){ return appData.tasks.reduce((s,t)=>s+getReq(t.id),0); }
+function totalAssigned(){ return Object.values(state.assignments).reduce((s,a)=>s+a.length,0); }
+
+// ══════════════════════════════════════════
+//  TAB SWITCHING
+// ══════════════════════════════════════════
+function showTab(tab){
+  const isSched = tab==='sched';
+  document.getElementById('schedTab').style.display = isSched?'grid':'none';
+  document.getElementById('mgmtTab').style.display  = isSched?'none':'block';
+  document.getElementById('schedCtrl').style.display= isSched?'flex':'none';
+  document.getElementById('mgmtCtrl').style.display = isSched?'none':'flex';
+  document.getElementById('tabSched').classList.toggle('active', isSched);
+  document.getElementById('tabMgmt').classList.toggle('active', !isSched);
+  if(!isSched) renderMgmt();
+}
+
+// ══════════════════════════════════════════
+//  SCHEDULE RENDER
+// ══════════════════════════════════════════
+function render(){ renderEmps(); renderTasks(); renderStats(); renderUnassigned(); renderResult(); renderTrainingSuggestions(); }
+
+function renderStats(){
+  const p=state.present.size, req=totalReq(), asgn=totalAssigned();
+  const un=[...state.present].filter(e=>!getAssignedTask(e)).length;
+  const sB=document.getElementById('sBadge'); sB.textContent=`الحاضرون: ${p}`; sB.className='badge';
+  document.getElementById('rBadge').textContent=`المطلوب: ${req}`;
+  const aB=document.getElementById('aBadge'); aB.textContent=`موزع: ${asgn}`; aB.className=asgn>=req&&req>0?'badge green':'badge';
+  const uB=document.getElementById('uBadge'); uB.textContent=`بدون تاسك: ${un}`; uB.className=un===0?'badge green':'badge yellow';
+  document.getElementById('pCount').textContent=`${p} حاضر`;
+}
+
+function renderEmps(){
+  const q=document.getElementById('searchBox').value;
+  document.getElementById('empList').innerHTML = appData.employees.map((emp,i)=>{
+    if(q && !emp.n.includes(q)) return '';
+    const pres=state.present.has(emp.n);
+    const tid=getAssignedTask(emp.n);
+    const tObj=tid?appData.tasks.find(t=>t.id===tid):null;
+    return `<div class="emp-item${pres?' present':''}" onclick="togglePresent(${i})">
+      <input type="checkbox" ${pres?'checked':''} onclick="event.stopPropagation()" onchange="togglePresent(${i})" />
+      <span class="emp-name">${emp.n}</span>
+      ${tObj?`<span class="emp-dot" style="background:${tObj.color}" title="${tObj.name}"></span>`:''}
+      <span class="emp-sc">${emp.s.filter(Boolean).length}✓</span>
+    </div>`;
+  }).join('');
+}
+
+function renderTasks(){
+  document.getElementById('tasksGrid').innerHTML = appData.tasks.map(task=>{
+    const req=getReq(task.id);
+    const arr=state.assignments[task.id]||[];
+    const cnt=arr.length;
+    let st=cnt===0&&req===0?'filled':cnt===0?'empty':cnt<req?'partial':cnt===req?'filled':'over';
+    const dot=st==='filled'?'d-filled':st==='partial'?'d-partial':'d-empty';
+    const cntColor=st==='filled'?'#16a34a':st==='empty'?'#ef4444':'#1e293b';
+    const avail=[...state.present].filter(e=>!getAssignedTask(e)&&canDo(e,task.id));
+    const opts=avail.length
+      ?avail.map(e=>`<option value="${e.replace(/"/g,'&quot;')}">${e}</option>`).join('')
+      :'<option disabled value="">لا يوجد متاح</option>';
+    const asgnHtml=arr.map(e=>{
+      const wk=timesThisWeek(e,task.id);
+      const warn=wk>=3?`<span class="repeat-warn" title="عمل هذا التاسك ${wk} مرات هذا الأسبوع">🔁${wk}</span>`:'';
+      return `<li class="asgn-item"><span class="asgn-name">${warn}${e}</span><button class="rm-btn" onclick="removeEmp('${task.id}','${e.replace(/'/g,"\\'")}')">✕</button></li>`;
+    }).join('');
+    return `<div class="task-card s-${st}">
+      <div class="task-hdr" style="background:${task.color}18;border-bottom-color:${task.color}30">
+        <span class="sdot ${dot}"></span>
+        <span class="task-icon">${task.icon}</span>
+        <span class="task-name">${task.name}</span>
+        <div class="task-counter">
+          <span class="cnt-now" style="color:${cntColor}">${cnt}</span>
+          <span class="cnt-sep">/</span>
+          <input class="cnt-req" type="number" min="0" max="30" value="${req}" onchange="setReq('${task.id}',this.value)" onclick="event.stopPropagation()" />
+        </div>
+      </div>
+      <div class="task-body">
+        <ul class="assigned-list">${asgnHtml}</ul>
+        <div class="add-row">
+          <select class="add-sel" id="sel-${task.id}"><option value="">اختر موظف...</option>${opts}</select>
+          <button class="add-btn" onclick="addEmp('${task.id}')">+ إضافة</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// اسم العرض في جدول النتيجة: إنجليزي لو موجود، وإلا عربي بدون د.
+function displayName(empName){
+  const emp = appData.employees.find(e=>e.n===empName);
+  if(emp && emp.en && emp.en.trim()) return emp.en.trim();
+  return empName.replace(/^(د\.\s*|د\s+)/,'').trim();
+}
+
+function renderResult(){
+  const sec  = document.getElementById('resultSec');
+  const body = document.getElementById('resultBody');
+  if(!sec || !body) return;
+
+  // IDs اللي بتتدمج (بوبا ومينا)
+  const SKIP    = new Set(['bupa_av','meena_av']); // هيتعرضوا جوا main
+  const MERGE   = { bupa_main:'bupa_av', meena_main:'meena_av' };
+  const MLABELS = { bupa_main:'Bupa', meena_main:'Meena' };
+
+  const rows = [];
+  appData.tasks.forEach(task=>{
+    if(SKIP.has(task.id)) return;
+
+    const mainArr = state.assignments[task.id] || [];
+    const avArr   = MERGE[task.id] ? (state.assignments[MERGE[task.id]] || []) : [];
+    const all     = [...mainArr, ...avArr];
+    if(!all.length) return; // مش هيظهر لو مفيش أسماء
+
+    const label = MLABELS[task.id] || task.name;
+
+    let namesCells;
+    if(MERGE[task.id]){
+      // الأول main، الباقي av
+      const mainPart = mainArr.map(n=>`<span class="r-main">${displayName(n)}</span>`).join(' - ');
+      const avPart   = avArr.map(n=>`<span class="r-av">${displayName(n)}</span>`).join(' - ');
+      namesCells = [mainPart, avPart].filter(Boolean).join(avPart?' &nbsp;|&nbsp; ':'');
+    } else {
+      namesCells = all.map(n=>displayName(n)).join(' &nbsp;-&nbsp; ');
+    }
+
+    rows.push(`<tr>
+      <td class="r-task" style="border-right:4px solid ${task.color}">${task.icon} ${label}</td>
+      <td class="r-names">${namesCells}</td>
+    </tr>`);
+  });
+
+  if(rows.length){
+    sec.style.display='';
+    const shiftLabel = state.shift==='morning'?'🌅 صباحي':'🌙 مسائي';
+    const d = new Date(state.date);
+    const dateStr = d.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    document.getElementById('resultLabel').textContent = `${dateStr} — ${shiftLabel==='🌅 صباحي'?'صباحي':'مسائي'}`;
+    body.innerHTML = rows.join('');
+  } else {
+    sec.style.display='none';
+  }
+}
+
+function renderUnassigned(){
+  const list=[...state.present].filter(e=>!getAssignedTask(e));
+  document.getElementById('unassignedList').innerHTML = list.length===0
+    ?'<span style="color:#16a34a;font-weight:700;">✅ الجميع موزع!</span>'
+    :list.map(e=>`<span class="u-tag">${e}</span>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  SCHEDULE ACTIONS
+// ══════════════════════════════════════════
+function togglePresent(i){
+  const name=appData.employees[i].n;
+  if(state.present.has(name)){
+    state.present.delete(name);
+    appData.tasks.forEach(t=>{ state.assignments[t.id]=(state.assignments[t.id]||[]).filter(x=>x!==name); });
+  } else { state.present.add(name); }
+  render();
+}
+function selectAll(){ appData.employees.forEach(e=>state.present.add(e.n)); render(); }
+function deselectAll(){ state.present.clear(); appData.tasks.forEach(t=>{ state.assignments[t.id]=[]; }); render(); }
+function setShift(sh){
+  state.shift=sh;
+  document.getElementById('btnMorning').classList.toggle('active',sh==='morning');
+  document.getElementById('btnEvening').classList.toggle('active',sh==='evening');
+  appData.tasks.forEach(t=>{ state.assignments[t.id]=[]; });
+  render();
+}
+function setReq(tid,val){ state.reqs[tid]=Math.max(0,parseInt(val)||0); render(); }
+function addEmp(tid){
+  const sel=document.getElementById(`sel-${tid}`);
+  const name=sel.value; if(!name) return;
+  appData.tasks.forEach(t=>{ state.assignments[t.id]=(state.assignments[t.id]||[]).filter(x=>x!==name); });
+  state.assignments[tid]=state.assignments[tid]||[];
+  state.assignments[tid].push(name);
+  render();
+}
+function removeEmp(tid,name){ state.assignments[tid]=(state.assignments[tid]||[]).filter(x=>x!==name); render(); }
+function clearAll(){ if(!confirm('مسح كل توزيع التاسكات؟')) return; appData.tasks.forEach(t=>{ state.assignments[t.id]=[]; }); render(); }
+function saveSchedule(){ saveHist(); alert('✅ تم حفظ الجدول!\nسيُستخدم في التوزيع التلقائي للتناوب.'); }
+
+// ══════════════════════════════════════════
+//  AUTO ASSIGN
+// ══════════════════════════════════════════
+
+// التاسكات اللي فيها توازن جداد/قدام
+const BALANCED_TASKS = ['store','home'];
+
+function getSkillCount(empName){
+  const emp = appData.employees.find(e=>e.n===empName);
+  return emp ? emp.s.filter(Boolean).length : 0;
+}
+
+// اختيار متوازن: نص قدام + نص جداد مع مراعاة التناوب وحماية التكرار
+function pickBalanced(eligible, required, taskId){
+  const totalTasks = appData.tasks.length;
+  const midpoint   = totalTasks / 2;
+
+  const byRotation = (a,b) => {
+    // الأولوية: اللي مش مكرر + آخر مرة بعيدة
+    const aOver = timesThisWeek(a,taskId)>=3 ? 1:0;
+    const bOver = timesThisWeek(b,taskId)>=3 ? 1:0;
+    if(aOver!==bOver) return aOver-bOver; // المكررين في الآخر
+    const da=lastTaskAgo(a,taskId), db=lastTaskAgo(b,taskId);
+    if(db!==da) return db-da;
+    return Math.random()-0.5;
+  };
+
+  // قدام = skills عالية  |  جداد = skills قليلة
+  const senior = eligible.filter(e=>getSkillCount(e)>midpoint).sort(byRotation);
+  const junior = eligible.filter(e=>getSkillCount(e)<=midpoint).sort(byRotation);
+
+  const wantJunior = Math.ceil(required/2);
+  const wantSenior = required - wantJunior;
+
+  let pick = [...junior.slice(0,wantJunior), ...senior.slice(0,wantSenior)];
+
+  // لو إحدى المجموعتين ناقصة، نكمل من التانية
+  if(pick.length < required){
+    const used = new Set(pick);
+    const rest = eligible.filter(e=>!used.has(e)).sort(byRotation);
+    pick = [...pick, ...rest.slice(0, required-pick.length)];
+  }
+  return pick;
+}
+
+function autoAssign(){
+  const present=[...state.present];
+  if(!present.length){ alert('اختر الحاضرين أولاً!'); return; }
+
+  appData.tasks.forEach(t=>{ state.assignments[t.id]=[]; });
+  const assigned=new Set();
+
+  // ── حساب العجز وتوزيعه بالترتيب ──
+  const fullReq = appData.tasks.reduce((s,t)=>s+getReq(t.id),0);
+  let shortage  = Math.max(0, fullReq - present.length);
+
+  const effectiveReq = {};
+  appData.tasks.forEach(t=>{ effectiveReq[t.id]=getReq(t.id); });
+
+  if(shortage > 0){
+    // المرحلة 1: توزيع متساوي بين Store و Home
+    const storeAvail = effectiveReq['store'] || 0;
+    const homeAvail  = effectiveReq['home']  || 0;
+    const shToCut    = Math.min(shortage, storeAvail + homeAvail);
+
+    const storeCut = Math.min(Math.ceil(shToCut / 2), storeAvail);
+    const homeCut  = Math.min(shToCut - storeCut, homeAvail);
+    effectiveReq['store'] -= storeCut;
+    effectiveReq['home']  -= homeCut;
+    shortage -= (storeCut + homeCut);
+
+    // المرحلة 2: لو لسه في عجز، نشيل من Meena AV
+    if(shortage > 0){
+      const meenaCut = Math.min(shortage, effectiveReq['meena_av'] || 0);
+      effectiveReq['meena_av'] = (effectiveReq['meena_av'] || 0) - meenaCut;
+      shortage -= meenaCut;
+    }
+  }
+
+  // الأصعب في التغطية يتملى أولاً
+  const sorted=[...appData.tasks].sort((a,b)=>{
+    const ae=present.filter(e=>canDo(e,a.id)).length;
+    const be=present.filter(e=>canDo(e,b.id)).length;
+    if(ae!==be) return ae-be;
+    return effectiveReq[b.id]-effectiveReq[a.id];
+  });
+
+  sorted.forEach(task=>{
+    const req=effectiveReq[task.id]; if(!req) return;
+    const eligible=present.filter(e=>!assigned.has(e)&&canDo(e,task.id));
+
+    let pick;
+    if(BALANCED_TASKS.includes(task.id)){
+      pick = pickBalanced(eligible, req, task.id);
+    } else {
+      pick = eligible.sort((a,b)=>{
+        // المكررين 3+ مرات في الأسبوع يتأخروا
+        const aOver = timesThisWeek(a,task.id)>=3 ? 1:0;
+        const bOver = timesThisWeek(b,task.id)>=3 ? 1:0;
+        if(aOver!==bOver) return aOver-bOver;
+        const da=lastTaskAgo(a,task.id), db=lastTaskAgo(b,task.id);
+        if(db!==da) return db-da;
+        const sc=getSkillCount(a)-getSkillCount(b);
+        if(sc!==0) return sc;
+        return Math.random()-0.5;
+      }).slice(0,req);
+    }
+
+    state.assignments[task.id]=pick;
+    pick.forEach(e=>assigned.add(e));
+  });
+
+  render();
+}
+
+// ══════════════════════════════════════════
+//  MANAGE TAB RENDER
+// ══════════════════════════════════════════
+function renderMgmt(){
+  renderTasksMgmt();
+  renderEmpTable();
+}
+
+function renderTasksMgmt(){
+  document.getElementById('tasksMgmtGrid').innerHTML = appData.tasks.map((t,i)=>`
+    <div class="task-mgmt-card" style="border-right:4px solid ${t.color}">
+      <span class="task-mgmt-icon">${t.icon}</span>
+      <div class="task-mgmt-info">
+        <div class="task-mgmt-name" title="${t.name}">${t.name}</div>
+        <div class="task-mgmt-req">العدد المطلوب: ${t.req}</div>
+      </div>
+      <div class="task-mgmt-actions">
+        <button class="tbtn tbtn-edit" onclick="openEditTask(${i})">✏️</button>
+        <button class="tbtn tbtn-del" onclick="deleteTask(${i})">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderEmpTable(){
+  const tbl=document.getElementById('empTable');
+  // Header
+  const thCols=appData.tasks.map((t,i)=>`<th title="${t.name}" style="background:${t.color}18;"><div style="font-size:16px;margin-bottom:3px">${t.icon}</div><div style="font-size:9px;color:#475569;font-weight:700;line-height:1.3;word-break:break-word">${t.name}</div></th>`).join('');
+  const thead=`<thead><tr>
+    <th class="name-col">الاسم عربي</th>
+    <th style="min-width:110px;background:#f0f9ff;color:#0369a1;position:sticky;top:0;z-index:4;border:1px solid #e2e8f0;padding:6px;font-size:11px;font-weight:700;white-space:nowrap;">English Name</th>
+    ${thCols}
+    <th>حذف</th>
+  </tr></thead>`;
+
+  // Body
+  const rows=appData.employees.map((emp,ei)=>{
+    const checks=appData.tasks.map((t,ti)=>
+      `<td><input type="checkbox" ${emp.s[ti]?'checked':''} onchange="toggleSkill(${ei},${ti},this.checked)" /></td>`
+    ).join('');
+    return `<tr>
+      <td class="name-td"><input type="text" value="${emp.n}" onchange="renameEmp(${ei},this.value)" /></td>
+      <td style="background:#f0f9ff;"><input type="text" value="${emp.en||''}" onchange="renameEmpEn(${ei},this.value)" style="border:none;background:transparent;font-size:11px;width:100%;direction:ltr;padding:1px 3px;" placeholder="e.g. M.Nour" /></td>
+      ${checks}
+      <td><button class="del-emp-btn" onclick="deleteEmp(${ei})">🗑️</button></td>
+    </tr>`;
+  }).join('');
+
+  // Add employee row
+  const emptyCbx=appData.tasks.map(()=>`<td></td>`).join('');
+  const addRow=`<tr class="add-emp-row" id="addEmpRow" style="display:none">
+    <td class="name-td"><input type="text" class="add-emp-input" id="newEmpName" placeholder="اسم الموظف الجديد..." /></td>
+    ${emptyCbx}
+    <td><button class="add-emp-btn" onclick="addEmp_mgmt()">إضافة</button></td>
+  </tr>`;
+
+  tbl.innerHTML=thead+`<tbody>${rows}${addRow}</tbody>`;
+}
+
+// ══════════════════════════════════════════
+//  MANAGE ACTIONS — TASKS
+// ══════════════════════════════════════════
+function addTask(){
+  const name=document.getElementById('newTaskName').value.trim();
+  if(!name){ alert('اكتب اسم التاسك!'); return; }
+  const icon=document.getElementById('newTaskIcon').value.trim()||'📌';
+  const req=parseInt(document.getElementById('newTaskReq').value)||1;
+  const color=document.getElementById('newTaskColor').value;
+  const id='task_'+Date.now();
+  appData.tasks.push({id,name,req,icon,color});
+  appData.employees.forEach(e=>e.s.push(0));
+  // Reset form
+  document.getElementById('newTaskName').value='';
+  document.getElementById('newTaskIcon').value='';
+  document.getElementById('newTaskReq').value='1';
+  saveAppData();
+  initAssignments();
+  renderMgmt();
+}
+
+function deleteTask(i){
+  if(!confirm(`حذف تاسك "${appData.tasks[i].name}"؟\nهيتحذف من كل الموظفين.`)) return;
+  const tid=appData.tasks[i].id;
+  delete state.assignments[tid];
+  delete state.reqs[tid];
+  appData.tasks.splice(i,1);
+  appData.employees.forEach(e=>e.s.splice(i,1));
+  saveAppData();
+  renderMgmt();
+  render();
+}
+
+function openEditTask(i){
+  const t=appData.tasks[i];
+  document.getElementById('editTaskId').value=i;
+  document.getElementById('editTaskName').value=t.name;
+  document.getElementById('editTaskIcon').value=t.icon;
+  document.getElementById('editTaskReq').value=t.req;
+  document.getElementById('editTaskColor').value=t.color;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function saveEditTask(){
+  const i=parseInt(document.getElementById('editTaskId').value);
+  appData.tasks[i].name=document.getElementById('editTaskName').value.trim()||appData.tasks[i].name;
+  appData.tasks[i].icon=document.getElementById('editTaskIcon').value.trim()||appData.tasks[i].icon;
+  appData.tasks[i].req=parseInt(document.getElementById('editTaskReq').value)||1;
+  appData.tasks[i].color=document.getElementById('editTaskColor').value;
+  closeModal();
+  saveAppData();
+  renderMgmt();
+  render();
+}
+
+function closeModal(){ document.getElementById('editModal').classList.remove('open'); }
+document.getElementById('editModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+function scrollToAddTask(){ document.getElementById('addTaskForm').scrollIntoView({behavior:'smooth'}); document.getElementById('newTaskName').focus(); }
+
+// ══════════════════════════════════════════
+//  MANAGE ACTIONS — EMPLOYEES
+// ══════════════════════════════════════════
+function toggleSkill(ei,ti,val){
+  appData.employees[ei].s[ti]=val?1:0;
+  saveAppData();
+  // Update schedule if employee is present in an invalid assignment
+  if(!val){
+    const task=appData.tasks[ti];
+    if(task && state.assignments[task.id]){
+      const empName=appData.employees[ei].n;
+      state.assignments[task.id]=state.assignments[task.id].filter(x=>x!==empName);
+    }
+    render();
+  }
+}
+
+function renameEmpEn(ei, val){
+  appData.employees[ei].en = val.trim();
+  saveAppData();
+}
+
+function renameEmp(ei,newName){
+  const old=appData.employees[ei].n;
+  appData.employees[ei].n=newName;
+  // Update state
+  if(state.present.has(old)){ state.present.delete(old); state.present.add(newName); }
+  Object.keys(state.assignments).forEach(tid=>{
+    state.assignments[tid]=state.assignments[tid].map(x=>x===old?newName:x);
+  });
+  saveAppData();
+  render();
+}
+
+function deleteEmp(ei){
+  const name=appData.employees[ei].n;
+  if(!confirm(`حذف "${name}" من الفريق؟`)) return;
+  state.present.delete(name);
+  Object.keys(state.assignments).forEach(tid=>{
+    state.assignments[tid]=(state.assignments[tid]||[]).filter(x=>x!==name);
+  });
+  appData.employees.splice(ei,1);
+  saveAppData();
+  renderMgmt();
+  render();
+}
+
+function openAddEmpRow(){
+  const row=document.getElementById('addEmpRow');
+  row.style.display='';
+  document.getElementById('newEmpName').focus();
+  row.scrollIntoView({behavior:'smooth'});
+}
+
+function addEmp_mgmt(){
+  const name=document.getElementById('newEmpName').value.trim();
+  if(!name){ alert('اكتب اسم الموظف!'); return; }
+  if(appData.employees.find(e=>e.n===name)){ alert('الاسم موجود بالفعل!'); return; }
+  const skills=new Array(appData.tasks.length).fill(0);
+  appData.employees.push({n:name,s:skills});
+  document.getElementById('newEmpName').value='';
+  saveAppData();
+  renderMgmt();
+  render();
+}
+
+function saveMgmtData(){ saveAppData(); alert('✅ تم حفظ جميع التعديلات!'); }
+
+// ══════════════════════════════════════════
+//  PASTE NAMES — SMART MATCHING
+// ══════════════════════════════════════════
+
+// Normalize Arabic text for comparison
+function normAr(s){
+  return (s||'')
+    .replace(/^(د\.|د\s*\.\s*|دكتور\s*|Dr\.\s*)/gi,'') // remove doctor prefix
+    .replace(/[أإآ]/g,'ا')   // normalize hamza
+    .replace(/ة/g,'ه')       // ta marbuta
+    .replace(/ى/g,'ي')       // alef maqsura
+    .replace(/[^؀-ۿ\s]/g,'') // keep Arabic only
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+// Score how well query matches empName (0-100)
+function scoreMatch(query, empName){
+  const q=normAr(query);
+  const e=normAr(empName);
+  if(!q||!e) return 0;
+  if(q===e) return 100;
+  if(e===q) return 100;
+  if(e.includes(q)) return 95;
+  if(q.includes(e)) return 92;
+
+  // Word-level overlap
+  const qW=q.split(' ').filter(w=>w.length>=2);
+  const eW=e.split(' ').filter(w=>w.length>=2);
+  if(!qW.length||!eW.length) return 0;
+
+  let hits=0;
+  for(const qw of qW){
+    for(const ew of eW){
+      if(ew===qw){ hits+=2; break; }
+      if(ew.includes(qw)||qw.includes(ew)){ hits+=1; break; }
+    }
+  }
+  if(hits===0) return 0;
+  const ratio=hits/(Math.max(qW.length,eW.length)*2);
+  return Math.round(40+ratio*55);
+}
+
+function findBestMatch(query){
+  let best=null, bestScore=0;
+  for(const emp of appData.employees){
+    const sc=scoreMatch(query,emp.n);
+    if(sc>bestScore){ bestScore=sc; best=emp; }
+  }
+  return {emp:best, score:bestScore};
+}
+
+// Parse pasted text into individual names — handles ANY separator
+function parsePastedNames(text){
+  return text
+    .replace(/\r\n|\r/g,'\n')                    // normalize line endings
+    .replace(/[,،;|\/\\]+/g,'\n')                // commas, semicolons, pipes, slashes → newlines
+    .replace(/[ \t]*[-–—_]+[ \t]*/g,'\n')        // dashes/underscores surrounded by spaces → newlines
+    .replace(/\t+/g,'\n')                         // leftover tabs → newlines
+    .split('\n')
+    .map(s=>s
+      .replace(/^[\s\d\.\-–—\)،,•*·#​﻿]+/,'')  // strip leading: numbers, bullets, junk
+      .replace(/[\s\d\.\-–—\)،,•*·#​﻿]+$/,'')  // strip trailing junk
+      .trim()
+    )
+    .filter(s=>{
+      // Must contain at least 2 Arabic characters to be a valid name
+      return (s.match(/[؀-ۿ]/g)||[]).length >= 2;
+    });
+}
+
+let currentMatches=[]; // [{pasted, emp, score, included}]
+
+function openPasteModal(){
+  document.getElementById('pasteStep1').style.display='';
+  document.getElementById('pasteStep2').style.display='none';
+  document.getElementById('pasteFooter').style.display='none';
+  document.getElementById('pasteTextarea').value='';
+  document.getElementById('pasteModal').classList.add('open');
+  setTimeout(()=>document.getElementById('pasteTextarea').focus(),100);
+}
+
+function closePasteModal(){
+  document.getElementById('pasteModal').classList.remove('open');
+}
+
+function backToPaste(){
+  document.getElementById('pasteStep1').style.display='';
+  document.getElementById('pasteStep2').style.display='none';
+  document.getElementById('pasteFooter').style.display='none';
+}
+
+function analyzePaste(){
+  const text=document.getElementById('pasteTextarea').value;
+  const names=parsePastedNames(text);
+  if(!names.length){ alert('الصق أسماء أولاً!'); return; }
+
+  currentMatches=names.map(pasted=>{
+    const {emp,score}=findBestMatch(pasted);
+    return {pasted, emp, score, included: score>=50};
+  });
+
+  renderMatchResults();
+  document.getElementById('pasteStep1').style.display='none';
+  document.getElementById('pasteStep2').style.display='';
+  document.getElementById('pasteFooter').style.display='flex';
+}
+
+function renderMatchResults(){
+  const high=currentMatches.filter(m=>m.score>=85).length;
+  const med=currentMatches.filter(m=>m.score>=50&&m.score<85).length;
+  const low=currentMatches.filter(m=>m.score<50).length;
+  document.getElementById('matchSummary').innerHTML=
+    `تم تحليل <strong>${currentMatches.length}</strong> اسم &nbsp;|&nbsp; `+
+    `<span style="color:#16a34a">✅ مطابقة عالية: ${high}</span> &nbsp;|&nbsp; `+
+    `<span style="color:#d97706">⚠️ تحتاج مراجعة: ${med}</span> &nbsp;|&nbsp; `+
+    `<span style="color:#dc2626">❌ غير واضح: ${low}</span>`;
+
+  const empOptions=appData.employees.map(e=>`<option value="${e.n.replace(/"/g,'&quot;')}">${e.n}</option>`).join('');
+
+  document.getElementById('matchTableBody').innerHTML=currentMatches.map((m,i)=>{
+    const confClass=m.score>=85?'conf-green':m.score>=50?'conf-yellow':'conf-red';
+    const rowClass=m.score>=85?'match-row-green':m.score>=50?'match-row-yellow':'match-row-red';
+    const selVal=m.emp?m.emp.n:'';
+    return `<tr class="${rowClass}">
+      <td style="text-align:center">
+        <input type="checkbox" class="match-check" ${m.included?'checked':''} onchange="toggleMatchInclude(${i},this.checked)" />
+      </td>
+      <td><strong>${m.pasted}</strong></td>
+      <td>
+        <select class="match-sel" onchange="changeMatchEmp(${i},this.value)">
+          <option value="">-- لا أحد --</option>
+          ${appData.employees.map(e=>`<option value="${e.n.replace(/"/g,'&quot;')}" ${e.n===selVal?'selected':''}>${e.n}</option>`).join('')}
+        </select>
+      </td>
+      <td style="text-align:center">
+        <span class="conf-badge ${confClass}">${m.score}%</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleMatchInclude(i, val){
+  currentMatches[i].included=val;
+}
+
+function changeMatchEmp(i, empName){
+  currentMatches[i].emp = empName ? appData.employees.find(e=>e.n===empName)||null : null;
+  currentMatches[i].included = !!empName;
+  // update checkbox
+  const cb=document.getElementById('matchTableBody').querySelectorAll('.match-check')[i];
+  if(cb) cb.checked=!!empName;
+}
+
+function confirmMatches(){
+  const toAdd=currentMatches.filter(m=>m.included&&m.emp);
+  if(!toAdd.length){ alert('مفيش حد محدد!'); return; }
+
+  // Clear existing present and assignments, then add matched
+  state.present.clear();
+  appData.tasks.forEach(t=>{ state.assignments[t.id]=[]; });
+
+  toAdd.forEach(m=>state.present.add(m.emp.n));
+
+  closePasteModal();
+  render();
+
+  // Show summary
+  const skipped=currentMatches.filter(m=>!m.included||!m.emp);
+  let msg=`✅ تم تحديد ${toAdd.length} موظف كحاضرين.`;
+  if(skipped.length) msg+=`\n⚠️ تم تجاهل ${skipped.length} اسم.`;
+  setTimeout(()=>alert(msg),200);
+}
+
+document.getElementById('pasteModal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget) closePasteModal();
+});
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+document.getElementById('dateInput').value=state.date;
+render();
+</script>
+</body>
+</html>
