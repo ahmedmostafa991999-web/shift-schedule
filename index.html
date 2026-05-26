@@ -259,6 +259,7 @@ body{font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:#f0
       <span class="badge" id="aBadge">موزع: 0</span>
       <span class="badge" id="uBadge">بدون تاسك: 0</span>
     </div>
+    <span id="syncStatus" style="font-size:13px;opacity:.9;cursor:default;" title="حالة المزامنة">☁️ ⏳</span>
     <button class="hbtn hbtn-save" onclick="saveSchedule()">💾 حفظ</button>
     <button class="hbtn hbtn-sec"  onclick="clearAll()">🗑️ مسح</button>
     <button class="hbtn hbtn-sec"  onclick="window.print()">🖨️ طباعة</button>
@@ -510,6 +511,61 @@ const DEFAULT_EMPS = [
   {n:"محمد يس",            s:[0,0,0,0,0,0,0,1,0,0], en:"Yaseen"},
   {n:"زياد السولية",       s:[0,0,0,0,0,0,0,1,0,0], en:"Zeyad"},
 ];
+
+// ══════════════════════════════════════════
+//  FIREBASE CLOUD SYNC
+// ══════════════════════════════════════════
+const FB_URL = 'https://shift-schedule-83175-default-rtdb.firebaseio.com';
+
+function setSyncStatus(status){
+  const el=document.getElementById('syncStatus');
+  if(!el) return;
+  const map={ok:'☁️ ✅',syncing:'☁️ ⏳',error:'☁️ ❌'};
+  el.textContent=map[status]||'☁️';
+  el.title={ok:'محفوظ على السحابة',syncing:'جاري المزامنة...',error:'خطأ في الاتصال'}[status]||'';
+}
+
+async function cloudSave(key, data){
+  try{
+    const r=await fetch(`${FB_URL}/${key}.json`,{method:'PUT',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});
+    return r.ok;
+  }catch(e){ return false; }
+}
+
+async function cloudLoad(key){
+  try{
+    const r=await fetch(`${FB_URL}/${key}.json`);
+    if(r.ok){ const d=await r.json(); return d; }
+  }catch(e){}
+  return null;
+}
+
+async function syncAll(){
+  setSyncStatus('syncing');
+  const a=await cloudSave('appData', appData);
+  const h=await cloudSave('shiftHist', getHist());
+  setSyncStatus(a&&h?'ok':'error');
+}
+
+async function initCloud(){
+  setSyncStatus('syncing');
+  const cloudApp=await cloudLoad('appData');
+  if(cloudApp && cloudApp.employees && cloudApp.tasks){
+    const defMap=Object.fromEntries(DEFAULT_EMPS.map(e=>[e.n,e]));
+    cloudApp.employees.forEach(e=>{
+      if(e.en===undefined) e.en=defMap[e.n]?.en||'';
+      while(e.s.length<cloudApp.tasks.length) e.s.push(0);
+      e.s=e.s.slice(0,cloudApp.tasks.length);
+    });
+    appData=cloudApp;
+    saveAppData();
+  }
+  const cloudHist=await cloudLoad('shiftHist');
+  if(cloudHist) localStorage.setItem('shiftHist',JSON.stringify(cloudHist));
+  setSyncStatus('ok');
+  initAssignments();
+  render();
+}
 
 // ══════════════════════════════════════════
 //  APP DATA (loaded from localStorage or defaults)
@@ -780,7 +836,7 @@ function addEmp(tid){
 }
 function removeEmp(tid,name){ state.assignments[tid]=(state.assignments[tid]||[]).filter(x=>x!==name); render(); }
 function clearAll(){ if(!confirm('مسح كل توزيع التاسكات؟')) return; appData.tasks.forEach(t=>{ state.assignments[t.id]=[]; }); render(); }
-function saveSchedule(){ saveHist(); alert('✅ تم حفظ الجدول!\nسيُستخدم في التوزيع التلقائي للتناوب.'); }
+function saveSchedule(){ saveHist(); syncAll(); alert('✅ تم حفظ الجدول!\nسيُستخدم في التوزيع التلقائي للتناوب.'); }
 
 // ══════════════════════════════════════════
 //  AUTO ASSIGN
@@ -1080,7 +1136,7 @@ function addEmp_mgmt(){
   render();
 }
 
-function saveMgmtData(){ saveAppData(); alert('✅ تم حفظ جميع التعديلات!'); }
+function saveMgmtData(){ saveAppData(); syncAll(); alert('✅ تم حفظ جميع التعديلات!'); }
 
 // ══════════════════════════════════════════
 //  PASTE NAMES — SMART MATCHING
@@ -1265,6 +1321,7 @@ document.getElementById('pasteModal').addEventListener('click',e=>{
 // ══════════════════════════════════════════
 document.getElementById('dateInput').value=state.date;
 render();
+initCloud(); // تحميل البيانات من Firebase
 </script>
 </body>
 </html>
