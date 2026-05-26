@@ -208,6 +208,31 @@ body{font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:#f0
 ::-webkit-scrollbar-track{background:#f1f5f9;}
 ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}
 
+/* ── HISTORY MODAL ── */
+.hist-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;align-items:center;justify-content:center;}
+.hist-modal.open{display:flex;}
+.hist-box{background:white;border-radius:16px;width:900px;max-width:97vw;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.35);overflow:hidden;}
+.hist-hdr{padding:13px 18px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;background:#1e40af;color:white;flex-shrink:0;}
+.hist-hdr-title{font-size:15px;font-weight:800;}
+.hist-close{border:none;background:none;font-size:22px;cursor:pointer;color:white;line-height:1;}
+.hist-body{display:flex;flex:1;overflow:hidden;}
+.hist-dates{width:160px;border-left:1px solid #e2e8f0;overflow-y:auto;background:#f8fafc;flex-shrink:0;}
+.hist-date-item{padding:9px 12px;cursor:pointer;font-size:12px;font-weight:600;color:#475569;border-bottom:1px solid #e2e8f0;transition:background .15s;}
+.hist-date-item:hover{background:#dbeafe;color:#1e40af;}
+.hist-date-item.active{background:#1e40af;color:white;}
+.hist-content{flex:1;overflow-y:auto;padding:12px;}
+.hist-shifts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.hist-shift-sec{border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;}
+.hist-shift-hdr{padding:8px 12px;font-size:13px;font-weight:800;color:white;text-align:center;}
+.hist-shift-hdr.morning{background:#f59e0b;}
+.hist-shift-hdr.evening{background:#6366f1;}
+.hist-shift-body{padding:8px;}
+.hist-row{display:flex;align-items:flex-start;gap:8px;padding:5px 6px;border-bottom:1px solid #f1f5f9;font-size:12px;}
+.hist-row:last-child{border-bottom:none;}
+.hist-task-name{font-weight:700;color:#1e293b;min-width:110px;flex-shrink:0;}
+.hist-emp-names{color:#475569;line-height:1.6;}
+.hist-empty{color:#94a3b8;font-size:12px;text-align:center;padding:20px;}
+
 /* ── RESULT TABLE ── */
 .result-sec{background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-top:10px;direction:ltr;}
 .result-hdr{padding:11px 16px;background:#1e40af;color:white;text-align:center;}
@@ -261,6 +286,7 @@ body{font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:#f0
     </div>
     <span id="syncStatus" style="font-size:13px;opacity:.9;cursor:default;" title="حالة المزامنة">☁️ ⏳</span>
     <button class="hbtn hbtn-save" onclick="saveSchedule()">💾 حفظ</button>
+    <button class="hbtn hbtn-sec"  onclick="openHistModal()">📅 السجل</button>
     <button class="hbtn hbtn-sec"  onclick="clearAll()">🗑️ مسح</button>
     <button class="hbtn hbtn-sec"  onclick="window.print()">🖨️ طباعة</button>
   </div>
@@ -396,6 +422,22 @@ body{font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif;background:#f0
     <div class="paste-footer" id="pasteFooter" style="display:none">
       <button class="paste-confirm-btn" onclick="confirmMatches()">✅ تأكيد وتحديد الحاضرين</button>
       <button class="paste-cancel-btn" onclick="backToPaste()">↩ رجوع</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div class="hist-modal" id="histModal">
+  <div class="hist-box">
+    <div class="hist-hdr">
+      <span class="hist-hdr-title">📅 سجل الجداول السابقة</span>
+      <button class="hist-close" onclick="closeHistModal()">✕</button>
+    </div>
+    <div class="hist-body">
+      <div class="hist-dates" id="histDateList"></div>
+      <div class="hist-content" id="histContent">
+        <div class="hist-empty">اختر تاريخاً من القائمة</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1207,6 +1249,70 @@ function parsePastedNames(text){
       // Must contain at least 2 Arabic characters to be a valid name
       return (s.match(/[؀-ۿ]/g)||[]).length >= 2;
     });
+}
+
+// ══════════════════════════════════════════
+//  HISTORY MODAL
+// ══════════════════════════════════════════
+function openHistModal(){
+  const hist=getHist();
+  if(!hist.length){ alert('مفيش جداول محفوظة بعد!\nاضغط 💾 حفظ بعد كل شيفت.'); return; }
+  const listEl=document.getElementById('histDateList');
+  listEl.innerHTML=hist.map((h,i)=>{
+    const d=new Date(h.date);
+    const label=d.toLocaleDateString('ar-EG',{weekday:'short',month:'short',day:'numeric'});
+    return `<div class="hist-date-item" id="hdi-${i}" onclick="showHistDate(${i})">${label}</div>`;
+  }).join('');
+  document.getElementById('histContent').innerHTML='<div class="hist-empty">اختر تاريخاً من القائمة</div>';
+  document.getElementById('histModal').classList.add('open');
+}
+
+function closeHistModal(){ document.getElementById('histModal').classList.remove('open'); }
+
+function showHistDate(idx){
+  document.querySelectorAll('.hist-date-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('hdi-'+idx).classList.add('active');
+  const hist=getHist();
+  const entry=hist[idx];
+  const d=new Date(entry.date);
+  const dateLabel=d.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  function buildShiftHTML(shiftKey, shiftLabel, cls){
+    const map=entry[shiftKey]||{};
+    if(!Object.keys(map).length) return `<div class="hist-shift-sec"><div class="hist-shift-hdr ${cls}">${shiftLabel}</div><div class="hist-empty">لم يُحفظ</div></div>`;
+    // group by task
+    const byTask={};
+    Object.entries(map).forEach(([emp,tid])=>{ if(!byTask[tid]) byTask[tid]=[]; byTask[tid].push(emp); });
+    const SKIP=new Set(['bupa_av','meena_av']);
+    const MERGE={bupa_main:'bupa_av',meena_main:'meena_av'};
+    const MLABELS={bupa_main:'Bupa',meena_main:'Meena'};
+    let rows='';
+    appData.tasks.forEach(task=>{
+      if(SKIP.has(task.id)) return;
+      const mainArr=byTask[task.id]||[];
+      const avArr=MERGE[task.id]?(byTask[MERGE[task.id]]||[]):[];
+      const all=[...mainArr,...avArr];
+      if(!all.length) return;
+      const label=MLABELS[task.id]||task.name;
+      let names;
+      if(MERGE[task.id]){
+        const mp=mainArr.map(n=>`<b style="color:#1e40af">${displayName(n)}</b>`).join(', ');
+        const ap=avArr.map(n=>displayName(n)).join(', ');
+        names=[mp,ap].filter(Boolean).join(' | ');
+      } else {
+        names=all.map(n=>displayName(n)).join(', ');
+      }
+      rows+=`<div class="hist-row"><span class="hist-task-name">${task.icon} ${label}</span><span class="hist-emp-names">${names}</span></div>`;
+    });
+    return `<div class="hist-shift-sec"><div class="hist-shift-hdr ${cls}">${shiftLabel}</div><div class="hist-shift-body">${rows||'<div class="hist-empty">لا يوجد</div>'}</div></div>`;
+  }
+
+  document.getElementById('histContent').innerHTML=`
+    <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;text-align:center;">${dateLabel}</div>
+    <div class="hist-shifts">
+      ${buildShiftHTML('morning','🌅 صباحي','morning')}
+      ${buildShiftHTML('evening','🌙 مسائي','evening')}
+    </div>`;
 }
 
 let currentMatches=[]; // [{pasted, emp, score, included}]
